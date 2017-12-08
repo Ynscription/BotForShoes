@@ -32,7 +32,7 @@ namespace Bot_For_Shoes {
 				if (name == null)
 					name = Context.User.Username;
 
-				eb.WithTitle(name + " does something!");
+				eb.WithTitle(name + " uses Something (" + param + ")!");
 				eb.WithDescription(_roller.roll(param));
 			}	
 
@@ -45,8 +45,19 @@ namespace Bot_For_Shoes {
 		[Alias("r")]
 		public async Task RollAsync(string param) {
 			EmbedBuilder eb = new EmbedBuilder();
-
 			
+			string active = _DBConnection.getActiveChar(Context.User.Id);
+			if (active != null) {
+				List<Pair<string, int>> skills = _DBConnection.getSkillsLike(Context.User.Id, active, param);
+				if (skills.Count > 0) {
+					Pair<string, int> skill = skills[0];
+					eb.WithTitle(active + " uses " + skill.First + " (" + skill.Second + ")!");
+					eb.WithDescription(_roller.roll(skill.Second));
+				} else {
+					eb.WithTitle("Warning!");
+					eb.WithDescription("Skill not found or there has been a problem.");
+				}
+			}
 
 			await ReplyAsync("", false, eb);
 		}
@@ -56,16 +67,18 @@ namespace Bot_For_Shoes {
 
 	[Group("character")]
 	[Alias("char")]
-	public class Chara : ModuleBase<SocketCommandContext> {
+	public class Character : ModuleBase<SocketCommandContext> {
 		private DBConnectionService _DBConnection;
 
-		public Chara(DBConnectionService dbCon) {
+		public Character(DBConnectionService dbCon) {
 			_DBConnection = dbCon;
 		}
 		
 
 		[Command]
+		[Priority (0)]
 		[Summary("Switches the active char of a user.")]
+		[Alias("s", "sw", "select")]
 		public async Task SwitchCharDefAsync(string param) {
 			EmbedBuilder eb = new EmbedBuilder();
 			if (_DBConnection.setActiveChar(Context.User.Id, param)) {
@@ -80,24 +93,8 @@ namespace Bot_For_Shoes {
 		}
 
 
-		[Command("switch")]
-		[Summary("Switches the active char of a user.")]
-		[Alias("s", "sw", "select")]
-		public async Task SwitchCharAsync(string param) {
-			EmbedBuilder eb = new EmbedBuilder();
-			if (_DBConnection.setActiveChar(Context.User.Id, param)) {
-				eb.WithTitle("Switched character to " + param + ".");
-				eb.WithDescription(Context.User.Mention);
-			} else {
-				eb.WithTitle("Warning!");
-				eb.WithDescription("Character not found or there has been a problem.");
-			}
-
-			await ReplyAsync("", false, eb);
-		}
-
-
 		[Command("create")]
+		[Priority(1)]
 		[Summary("Creates a new character with the specified name.")]
 		[Alias("c", "new")]
 		public async Task CreateCharAsync(string param) {
@@ -117,6 +114,7 @@ namespace Bot_For_Shoes {
 
 
 		[Command("delete")]
+		[Priority(1)]
 		[Summary("Deletes an existing character with the specified name.")]
 		[Alias("d", "del")]
 		public async Task DeleteCharAsync(string param) {
@@ -135,6 +133,7 @@ namespace Bot_For_Shoes {
 
 
 		[Command("list")]
+		[Priority(1)]
 		[Summary("Lists all characters of a user.")]
 		[Alias("l", "ls")]
 		public async Task ListCharsAsync() {
@@ -155,9 +154,72 @@ namespace Bot_For_Shoes {
 			await ReplyAsync("", false, eb);
 		}
 
-		
+	}
 
+	[Group("skill")]
+	[Alias("sk")]
+	public class Skill : ModuleBase<SocketCommandContext> {
+		private DBConnectionService _DBConnection;
+		private Roller _roller;
 
+		public Skill(DBConnectionService dbCon, Roller roller) {
+			_DBConnection = dbCon;
+			_roller = roller;
+		}
 
+		[Command]
+		[Summary("Rolls using the skill.")]
+		[Alias("use", "u", "roll", "r")]
+		public async Task RollSkillAsync(string param) {
+			EmbedBuilder eb = new EmbedBuilder();
+			string active = _DBConnection.getActiveChar(Context.User.Id);
+			if (active != null) {
+				List<Pair<string, int>> skills = _DBConnection.getSkillsLike(Context.User.Id, active,param);
+				if (skills.Count > 0) {
+					Pair<string, int> skill = skills[0];
+					eb.WithTitle(active + " uses " + skill.First + " (" + skill.Second + ")!");
+					eb.WithDescription(_roller.roll(skill.Second));
+				} 
+				else {
+					eb.WithTitle("Warning!");
+					eb.WithDescription("Skill not found or there has been a problem.");
+				}
+			} 
+			else {
+				eb.WithTitle("Warning!");
+				eb.WithDescription("No active character or there has been a problem.");
+			}
+
+			await ReplyAsync("", false, eb);
+		}
+
+		[Command("add")]
+		[Summary("Adds a new skill to the active character.")]
+		[Alias("a")]
+		public async Task AddSkillAsync(string skill, int lvl) {
+			EmbedBuilder eb = new EmbedBuilder();
+			string active = _DBConnection.getActiveChar(Context.User.Id);
+			if (lvl > 1) {
+				if (active != null) {
+					if (_DBConnection.addSkill(Context.User.Id, active, skill, lvl)) {
+						eb.WithTitle(active + " now can use " + skill + " " + lvl);
+						eb.WithDescription(Context.User.Mention);
+					}
+					else {
+						eb.WithTitle("Warning!");
+						eb.WithDescription("Skill already exists or there has been a problem.");
+					}
+				} 
+				else {
+					eb.WithTitle("Warning!");
+					eb.WithDescription("No active character or there has been a problem.");
+				}
+			}
+			else {
+				eb.WithTitle("Warning!");
+				eb.WithDescription("Level must be higher than 1.");
+			}
+			await ReplyAsync("", false, eb);
+		}
 	}
 }

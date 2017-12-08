@@ -60,6 +60,7 @@ namespace Bot_For_Shoes {
 		public bool deleteChar (ulong user, string chara) {
 			bool success = false;
 			string deleteChar = "DELETE FROM Chars WHERE id = @user AND char = @chara;";
+			string deleteSkills = "DELETE FROM Skills WHERE id = @user AND char = @chara;";
 			string switchChar = "SELECT char FROM Chars WHERE id = @user LIMIT 1";
 			string updateActive = "UPDATE Users SET active = @switchChara WHERE id = @user;";
 			string deleteActive = "DELETE FROM Users WHERE id = @user;";
@@ -72,6 +73,9 @@ namespace Bot_For_Shoes {
 			command.CommandText = deleteChar;
 			int deletions = command.ExecuteNonQuery();
 			if (deletions == 1) {
+				command.CommandText = deleteSkills;
+				command.ExecuteNonQuery();
+
 				command.CommandText = switchChar;
 				SQLiteDataReader check = command.ExecuteReader();
 				if (check.Read()) {
@@ -132,7 +136,7 @@ namespace Bot_For_Shoes {
 		public List<string> getCharsLike(string chara) {
 			List<string> chars = new List<string>();
 			string search = "'" + chara.ToUpper() + "%'";
-			string switchChar = "SELECT char FROM Chars WHERE id = @user AND UPER(char) LIKE @search";
+			string switchChar = "SELECT char FROM Chars WHERE id = @user AND UPPER(char) LIKE @search";
 
 			SQLiteCommand command = new SQLiteCommand(switchChar, _DBConnection);
 			command.Parameters.Add(new SQLiteParameter("@search", search));
@@ -143,23 +147,42 @@ namespace Bot_For_Shoes {
 			return chars;
 		}
 
-		public List<string> getSkillsLike(ulong user, string chara, string skill) {
-			List<string> skills = new List<string>();
-			string search = "'" + skill.ToUpper() + "%'";
-			string getSkills = "SELECT skill FROM Skills WHERE id = @user AND char = @chara AND UPER(skill) LIKE @search";
+		public List<Pair<string, int>> getSkillsLike(ulong user, string chara, string skill) {
+			List<Pair<string, int>> skills = new List<Pair<string, int>>();
+			string search = skill.ToUpper() + "%";
+			string getSkills = "SELECT skill, lvl FROM Skills WHERE id = @user AND char = @chara AND UPPER(skill) LIKE @search";
 
 			SQLiteCommand command = new SQLiteCommand(getSkills, _DBConnection);
+			command.Parameters.Add(new SQLiteParameter("@user", user));
+			command.Parameters.Add(new SQLiteParameter("@chara", chara));
 			command.Parameters.Add(new SQLiteParameter("@search", search));
 			SQLiteDataReader result = command.ExecuteReader();
 			while (result.Read()) {
-				skills.Add(result.GetString(0));
+				Pair<string, int> s = new Pair<string, int>(result.GetString(0), result.GetInt32(1));
+				skills.Add(s);
 			}
 			return skills;
 		}
 
-		public bool addSkill (ulong user, string chara, string skill) {
+		public bool addSkill (ulong user, string chara, string skill, int lvl) {
 			bool res = false;
 
+			string checkSkill = "SELECT * FROM Skills WHERE id = @user AND char = @chara AND skill = @skill;";
+			string insertSkill = "INSERT INTO Skills (id, char, skill, lvl) VALUES (@user, @chara, @skill, @lvl);";
+
+			SQLiteCommand command = new SQLiteCommand(checkSkill, _DBConnection);
+			command.Parameters.Add(new SQLiteParameter("@user", user));
+			command.Parameters.Add(new SQLiteParameter("@chara", chara));
+			command.Parameters.Add(new SQLiteParameter("@skill", skill));
+			command.Parameters.Add(new SQLiteParameter("@lvl", lvl));
+
+			SQLiteDataReader result = command.ExecuteReader();
+			if (!result.HasRows) {
+				result.Close();
+				command.CommandText = insertSkill;
+				command.ExecuteNonQuery();
+				res = true;
+			}
 			return res;
 		}
 
