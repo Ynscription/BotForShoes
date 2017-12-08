@@ -13,6 +13,10 @@ namespace Bot_For_Shoes {
 			_random = new Random(seed);
 		}
 
+		public Roller (Random random) {
+			_random = random;
+		}
+
 		public string roll (int param) {
 			string res = "";
 			res = "Result " + param + "d6: ";

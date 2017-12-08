@@ -18,7 +18,9 @@ namespace Bot_For_Shoes {
 			_client.Log += Log;
 			_map.AddSingleton(_client);
 
-			_map.AddSingleton(new Roller());
+			Random random = new Random();
+			_map.AddSingleton(random);
+			_map.AddSingleton(new Roller(random));			
 
 			_DBConnection = new DBConnectionService();
 			_map.AddSingleton(_DBConnection);

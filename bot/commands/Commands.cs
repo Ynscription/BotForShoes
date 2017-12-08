@@ -10,10 +10,12 @@ namespace Bot_For_Shoes {
 		
 		private DBConnectionService _DBConnection;
 		private Roller _roller;
+		private Random _random;
 
-		public Roll (DBConnectionService dbCon, Roller roller) {
+		public Roll (DBConnectionService dbCon, Roller roller, Random random) {
 			_DBConnection = dbCon;
 			_roller = roller;
+			_random = random;
 		}
 		
 		[Command("roll")]
@@ -26,6 +28,7 @@ namespace Bot_For_Shoes {
 			if (param > 20 || param < 1) {
 				eb.WithTitle("Warning!");
 				eb.WithDescription("Invalid amount of dice.");
+				eb.WithColor(Color.Red);
 			}
 			else {
 				string name = _DBConnection.getActiveChar(Context.User.Id);
@@ -34,6 +37,7 @@ namespace Bot_For_Shoes {
 
 				eb.WithTitle(name + " uses Something (" + param + ")!");
 				eb.WithDescription(_roller.roll(param));
+				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 			}	
 
 			await ReplyAsync("", false, eb);
@@ -45,7 +49,6 @@ namespace Bot_For_Shoes {
 		[Alias("r")]
 		public async Task RollAsync(string param) {
 			EmbedBuilder eb = new EmbedBuilder();
-			
 			string active = _DBConnection.getActiveChar(Context.User.Id);
 			if (active != null) {
 				List<Pair<string, int>> skills = _DBConnection.getSkillsLike(Context.User.Id, active, param);
@@ -53,10 +56,16 @@ namespace Bot_For_Shoes {
 					Pair<string, int> skill = skills[0];
 					eb.WithTitle(active + " uses " + skill.First + " (" + skill.Second + ")!");
 					eb.WithDescription(_roller.roll(skill.Second));
+					eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 				} else {
 					eb.WithTitle("Warning!");
 					eb.WithDescription("Skill not found or there has been a problem.");
+					eb.WithColor(Color.Red);
 				}
+			} else {
+				eb.WithTitle("Warning!");
+				eb.WithDescription("No active character or there has been a problem.");
+				eb.WithColor(Color.Red);
 			}
 
 			await ReplyAsync("", false, eb);
@@ -69,14 +78,16 @@ namespace Bot_For_Shoes {
 	[Alias("char")]
 	public class Character : ModuleBase<SocketCommandContext> {
 		private DBConnectionService _DBConnection;
+		private Random _random;
 
-		public Character(DBConnectionService dbCon) {
+		public Character(DBConnectionService dbCon, Random random) {
 			_DBConnection = dbCon;
+			_random = random;
 		}
 		
 
 		[Command]
-		[Priority (0)]
+		[Priority (1)]
 		[Summary("Switches the active char of a user.")]
 		[Alias("s", "sw", "select")]
 		public async Task SwitchCharDefAsync(string param) {
@@ -84,9 +95,45 @@ namespace Bot_For_Shoes {
 			if (_DBConnection.setActiveChar(Context.User.Id, param)) {
 				eb.WithTitle("Switched character to " + param + ".");
 				eb.WithDescription(Context.User.Mention);
+				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 			} else {
 				eb.WithTitle("Warning!");
 				eb.WithDescription("Character not found or there has been a problem.");
+				eb.WithColor(Color.Red);
+			}
+
+			await ReplyAsync("", false, eb);
+		}
+
+		[Command]
+		[Priority(0)]
+		[Summary("Displays info of the active char.")]
+		public async Task CharInfoAsync() {
+			EmbedBuilder eb = new EmbedBuilder();
+			string active = _DBConnection.getActiveChar(Context.User.Id);
+			if (active != null) {
+				eb.WithTitle(active);
+				List<Pair<string, int>> skills = _DBConnection.getSkillList(Context.User.Id, active);
+				string list = "";
+				if (skills.Count < 1)
+					list = "No skills";
+				foreach (Pair<string, int> skill in skills) {
+					list += skill.First + " " + skill.Second + Environment.NewLine;
+				}
+				int xp = _DBConnection.getCharXP (Context.User.Id, active);
+				eb.WithDescription("XP: " + xp);
+				EmbedFieldBuilder fb = new EmbedFieldBuilder();
+				fb.WithName(new String ("Skills".ToCharArray()));
+				fb.WithValue(new String(list.ToCharArray()));
+				fb.WithIsInline(true);
+				
+				eb.AddField(fb);
+				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
+			} 
+			else {
+				eb.WithTitle("Warning!");
+				eb.WithDescription("No active character or there has been a problem.");
+				eb.WithColor(Color.Red);
 			}
 
 			await ReplyAsync("", false, eb);
@@ -94,7 +141,7 @@ namespace Bot_For_Shoes {
 
 
 		[Command("create")]
-		[Priority(1)]
+		[Priority(2)]
 		[Summary("Creates a new character with the specified name.")]
 		[Alias("c", "new")]
 		public async Task CreateCharAsync(string param) {
@@ -103,10 +150,12 @@ namespace Bot_For_Shoes {
 			if (_DBConnection.createChar(Context.User.Id, param)) {
 				eb.WithTitle("Character " + param + " created!");
 				eb.WithDescription(Context.User.Mention);
+				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 			}
 			else {
 				eb.WithTitle("Warning!");
 				eb.WithDescription("Character already exists or there has been a problem.");
+				eb.WithColor(Color.Red);
 			}
 
 			await ReplyAsync("", false, eb);
@@ -114,7 +163,7 @@ namespace Bot_For_Shoes {
 
 
 		[Command("delete")]
-		[Priority(1)]
+		[Priority(2)]
 		[Summary("Deletes an existing character with the specified name.")]
 		[Alias("d", "del")]
 		public async Task DeleteCharAsync(string param) {
@@ -123,9 +172,11 @@ namespace Bot_For_Shoes {
 			if (_DBConnection.deleteChar(Context.User.Id, param)) {
 				eb.WithTitle("Character " + param + " deleted!");
 				eb.WithDescription(Context.User.Mention);
+				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 			} else {
 				eb.WithTitle("Warning!");
 				eb.WithDescription("Character does NOT exists or there has been a problem.");
+				eb.WithColor(Color.Red);
 			}
 
 			await ReplyAsync("", false, eb);
@@ -133,7 +184,7 @@ namespace Bot_For_Shoes {
 
 
 		[Command("list")]
-		[Priority(1)]
+		[Priority(2)]
 		[Summary("Lists all characters of a user.")]
 		[Alias("l", "ls")]
 		public async Task ListCharsAsync() {
@@ -146,9 +197,11 @@ namespace Bot_For_Shoes {
 					list += chara + Environment.NewLine;
 				}
 				eb.WithDescription(list);
+				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 			} else {
 				eb.WithTitle("Warning!");
 				eb.WithDescription("You have no characters or there has been a problem.");
+				eb.WithColor(Color.Red);
 			}
 
 			await ReplyAsync("", false, eb);
@@ -156,15 +209,18 @@ namespace Bot_For_Shoes {
 
 	}
 
+
 	[Group("skill")]
 	[Alias("sk")]
 	public class Skill : ModuleBase<SocketCommandContext> {
 		private DBConnectionService _DBConnection;
 		private Roller _roller;
+		private Random _random;
 
-		public Skill(DBConnectionService dbCon, Roller roller) {
+		public Skill(DBConnectionService dbCon, Roller roller, Random random) {
 			_DBConnection = dbCon;
 			_roller = roller;
+			_random = random;
 		}
 
 		[Command]
@@ -179,15 +235,18 @@ namespace Bot_For_Shoes {
 					Pair<string, int> skill = skills[0];
 					eb.WithTitle(active + " uses " + skill.First + " (" + skill.Second + ")!");
 					eb.WithDescription(_roller.roll(skill.Second));
+					eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 				} 
 				else {
 					eb.WithTitle("Warning!");
 					eb.WithDescription("Skill not found or there has been a problem.");
+					eb.WithColor(Color.Red);
 				}
 			} 
 			else {
 				eb.WithTitle("Warning!");
 				eb.WithDescription("No active character or there has been a problem.");
+				eb.WithColor(Color.Red);
 			}
 
 			await ReplyAsync("", false, eb);
@@ -202,24 +261,59 @@ namespace Bot_For_Shoes {
 			if (lvl > 1) {
 				if (active != null) {
 					if (_DBConnection.addSkill(Context.User.Id, active, skill, lvl)) {
-						eb.WithTitle(active + " now can use " + skill + " " + lvl);
+						eb.WithTitle(active + " can now use " + skill + " " + lvl);
 						eb.WithDescription(Context.User.Mention);
+						eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 					}
 					else {
 						eb.WithTitle("Warning!");
 						eb.WithDescription("Skill already exists or there has been a problem.");
+						eb.WithColor(Color.Red);
 					}
 				} 
 				else {
 					eb.WithTitle("Warning!");
 					eb.WithDescription("No active character or there has been a problem.");
+					eb.WithColor(Color.Red);
 				}
 			}
 			else {
 				eb.WithTitle("Warning!");
 				eb.WithDescription("Level must be higher than 1.");
+				eb.WithColor(Color.Red);
 			}
 			await ReplyAsync("", false, eb);
 		}
+
+		[Command("remove")]
+		[Summary("Removes a skill from the active character.")]
+		[Alias("r", "rm", "del", "delete")]
+		public async Task RemoveSkillAsync(string skill) {
+			EmbedBuilder eb = new EmbedBuilder();
+			string active = _DBConnection.getActiveChar(Context.User.Id);
+			if (active != null) {
+				if (_DBConnection.removeSkill(Context.User.Id, active, skill)) {
+					eb.WithTitle(active + " can no longer use " + skill);
+					eb.WithDescription(Context.User.Mention);
+					eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
+				} else {
+					eb.WithTitle("Warning!");
+					eb.WithDescription("Skill does NOT exist or there has been a problem.");
+					eb.WithColor(Color.Red);
+				}
+			} else {
+				eb.WithTitle("Warning!");
+				eb.WithDescription("No active character or there has been a problem.");
+				eb.WithColor(Color.Red);
+			}
+			
+			await ReplyAsync("", false, eb);
+		}
 	}
+
+	[Group("xp")]
+	public class XP: ModuleBase<SocketCommandContext> {
+
+	}
+
 }

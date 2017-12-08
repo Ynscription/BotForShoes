@@ -13,7 +13,7 @@ namespace Bot_For_Shoes {
 			_DBConnection = new SQLiteConnection("Data Source=e:\\BotForShoesDB\\users.sqlite; Version=3; New = True;");
 			_DBConnection.Open();
 			new SQLiteCommand("CREATE TABLE if not exists Users (id INTEGER PRIMARY KEY, active TEXT);", _DBConnection).ExecuteNonQuery();
-			new SQLiteCommand("CREATE TABLE if not exists Chars (id INTEGER, char TEXT, PRIMARY KEY (id, char));", _DBConnection).ExecuteNonQuery();
+			new SQLiteCommand("CREATE TABLE if not exists Chars (id INTEGER, char TEXT, xp INTEGER, PRIMARY KEY (id, char));", _DBConnection).ExecuteNonQuery();
 			new SQLiteCommand("CREATE TABLE if not exists Skills (id INTEGER, char TEXT, skill TEXT, lvl INTEGER, PRIMARY KEY (id, char, skill));", _DBConnection).ExecuteNonQuery();
 		}
 
@@ -32,7 +32,7 @@ namespace Bot_For_Shoes {
 		public bool createChar (ulong user, string chara) {
 			bool success = false;
 			string checkChar = "SELECT * FROM Chars WHERE id = @user AND char = @chara;";
-			string insertChar = "INSERT INTO Chars (id, char) VALUES (@user, @chara);";
+			string insertChar = "INSERT INTO Chars (id, char, xp) VALUES (@user, @chara, 0);";
 			string insertActive = "INSERT OR REPLACE INTO Users (id, active) VALUES (@user, @chara);";
 
 			SQLiteCommand command = new SQLiteCommand(_DBConnection);
@@ -133,18 +133,52 @@ namespace Bot_For_Shoes {
 			return chars;
 		}
 
-		public List<string> getCharsLike(string chara) {
+		public List<string> getCharsLike(ulong user, string chara) {
 			List<string> chars = new List<string>();
 			string search = "'" + chara.ToUpper() + "%'";
 			string switchChar = "SELECT char FROM Chars WHERE id = @user AND UPPER(char) LIKE @search";
 
 			SQLiteCommand command = new SQLiteCommand(switchChar, _DBConnection);
+			command.Parameters.Add(new SQLiteParameter("@user", user));
 			command.Parameters.Add(new SQLiteParameter("@search", search));
+			
 			SQLiteDataReader result = command.ExecuteReader();
 			while (result.Read()) {
 				chars.Add(result.GetString(0));
 			}
 			return chars;
+		}
+
+		public int getCharXP (ulong user, string chara) {
+			int res = -1;
+			string getXP = "SELECT xp FROM Chars WHERE id = @user AND char = @chara";
+			SQLiteCommand command = new SQLiteCommand(getXP, _DBConnection);
+			command.Parameters.Add(new SQLiteParameter("@user", user));
+			command.Parameters.Add(new SQLiteParameter("@chara", chara));
+
+			SQLiteDataReader result = command.ExecuteReader();
+			if (result.Read()) {
+				res = result.GetInt32(0);
+			}
+
+			return res;
+		}
+
+		public List<Pair<string,int>> getSkillList (ulong user, string chara) {
+			List<Pair<string, int>> list = new List<Pair<string, int>>();
+			string getSkills = "SELECT skill, lvl FROM Skills WHERE id = @user AND char = @chara";
+
+			SQLiteCommand command = new SQLiteCommand(getSkills, _DBConnection);
+			command.Parameters.Add(new SQLiteParameter("@user", user));
+			command.Parameters.Add(new SQLiteParameter("@chara", chara));
+			SQLiteDataReader result = command.ExecuteReader();
+
+			while (result.Read()) {
+				Pair<string, int> s = new Pair<string, int>(result.GetString(0), result.GetInt32(1));
+				list.Add(s);
+			}
+			result.Close();
+			return list;
 		}
 
 		public List<Pair<string, int>> getSkillsLike(ulong user, string chara, string skill) {
@@ -186,6 +220,16 @@ namespace Bot_For_Shoes {
 			return res;
 		}
 
+		public bool removeSkill(ulong user, string chara, string skill) {
+			string removeSkill = "DELETE FROM Skills WHERE id = @user AND char = @chara AND skill = @skill;";
+
+			SQLiteCommand command = new SQLiteCommand(removeSkill, _DBConnection);
+			command.Parameters.Add(new SQLiteParameter("@user", user));
+			command.Parameters.Add(new SQLiteParameter("@chara", chara));
+			command.Parameters.Add(new SQLiteParameter("@skill", skill));
+			
+			return command.ExecuteNonQuery() == 1;
+		}
 
 		public void close () {
 			Console.WriteLine("Saving...");
