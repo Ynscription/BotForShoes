@@ -133,7 +133,7 @@ namespace Bot_For_Shoes.bot.services {
 
 		public List<string> getCharsLike(ulong user, string chara) {
 			List<string> chars = new List<string>();
-			string search = "'" + chara.ToUpper() + "%'";
+			string search = chara.ToUpper() + "%";
 			string switchChar = "SELECT char FROM Chars WHERE id = @user AND UPPER(char) LIKE @search";
 
 			SQLiteCommand command = new SQLiteCommand(switchChar, _DBConnection);

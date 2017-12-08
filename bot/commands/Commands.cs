@@ -134,8 +134,11 @@ namespace Bot_For_Shoes.bot.commands {
 		[Alias("s", "sw", "select")]
 		public async Task SwitchCharDefAsync(string param) {
 			EmbedBuilder eb = new EmbedBuilder();
-			if (_DBConnection.setActiveChar(Context.User.Id, param)) {
-				eb.WithTitle("Switched character to " + param + ".");
+
+			List<string> chars = _DBConnection.getCharsLike(Context.User.Id, param);
+			if (chars.Count > 0) {
+				_DBConnection.setActiveChar(Context.User.Id, chars[0]);
+				eb.WithTitle("Switched character to " + chars[0] + ".");
 				eb.WithDescription(Context.User.Mention);
 				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 			} else {
