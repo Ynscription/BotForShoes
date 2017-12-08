@@ -62,6 +62,40 @@ namespace Bot_For_Shoes {
 		public Chara(DBConnectionService dbCon) {
 			_DBConnection = dbCon;
 		}
+		
+
+		[Command]
+		[Summary("Switches the active char of a user.")]
+		public async Task SwitchCharDefAsync(string param) {
+			EmbedBuilder eb = new EmbedBuilder();
+			if (_DBConnection.setActiveChar(Context.User.Id, param)) {
+				eb.WithTitle("Switched character to " + param + ".");
+				eb.WithDescription(Context.User.Mention);
+			} else {
+				eb.WithTitle("Warning!");
+				eb.WithDescription("Character not found or there has been a problem.");
+			}
+
+			await ReplyAsync("", false, eb);
+		}
+
+
+		[Command("switch")]
+		[Summary("Switches the active char of a user.")]
+		[Alias("s", "sw", "select")]
+		public async Task SwitchCharAsync(string param) {
+			EmbedBuilder eb = new EmbedBuilder();
+			if (_DBConnection.setActiveChar(Context.User.Id, param)) {
+				eb.WithTitle("Switched character to " + param + ".");
+				eb.WithDescription(Context.User.Mention);
+			} else {
+				eb.WithTitle("Warning!");
+				eb.WithDescription("Character not found or there has been a problem.");
+			}
+
+			await ReplyAsync("", false, eb);
+		}
+
 
 		[Command("create")]
 		[Summary("Creates a new character with the specified name.")]
@@ -81,6 +115,7 @@ namespace Bot_For_Shoes {
 			await ReplyAsync("", false, eb);
 		}
 
+
 		[Command("delete")]
 		[Summary("Deletes an existing character with the specified name.")]
 		[Alias("d", "del")]
@@ -97,6 +132,7 @@ namespace Bot_For_Shoes {
 
 			await ReplyAsync("", false, eb);
 		}
+
 
 		[Command("list")]
 		[Summary("Lists all characters of a user.")]
@@ -119,36 +155,7 @@ namespace Bot_For_Shoes {
 			await ReplyAsync("", false, eb);
 		}
 
-		[Command("switch")]
-		[Summary("Switches the active char of a user.")]
-		[Alias("s", "sw", "select")]
-		public async Task SwitchCharAsync(string param) {
-			EmbedBuilder eb = new EmbedBuilder();
-			if (_DBConnection.setActiveChar(Context.User.Id, param)) {
-				eb.WithTitle("Switched character to "+ param +".");
-				eb.WithDescription(Context.User.Mention);
-			} else {
-				eb.WithTitle("Warning!");
-				eb.WithDescription("Character not found or there has been a problem.");
-			}
-
-			await ReplyAsync("", false, eb);
-		}
-
-		[Command]
-		[Summary("Switches the active char of a user.")]
-		public async Task SwitchCharDefAsync(string param) {
-			EmbedBuilder eb = new EmbedBuilder();
-			if (_DBConnection.setActiveChar(Context.User.Id, param)) {
-				eb.WithTitle("Switched character to " + param + ".");
-				eb.WithDescription(Context.User.Mention);
-			} else {
-				eb.WithTitle("Warning!");
-				eb.WithDescription("Character not found or there has been a problem.");
-			}
-
-			await ReplyAsync("", false, eb);
-		}
+		
 
 
 
