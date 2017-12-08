@@ -135,6 +135,21 @@ namespace Bot_For_Shoes {
 			await ReplyAsync("", false, eb);
 		}
 
+		[Command]
+		[Summary("Switches the active char of a user.")]
+		public async Task SwitchCharDefAsync(string param) {
+			EmbedBuilder eb = new EmbedBuilder();
+			if (_DBConnection.setActiveChar(Context.User.Id, param)) {
+				eb.WithTitle("Switched character to " + param + ".");
+				eb.WithDescription(Context.User.Mention);
+			} else {
+				eb.WithTitle("Warning!");
+				eb.WithDescription("Character not found or there has been a problem.");
+			}
+
+			await ReplyAsync("", false, eb);
+		}
+
 
 
 	}
