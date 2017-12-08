@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using Bot_For_Shoes.bot;
+using System.Threading.Tasks;
 
 namespace Bot_For_Shoes {
 

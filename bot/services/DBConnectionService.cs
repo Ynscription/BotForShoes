@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Data.SQLite;
-using System.Threading.Tasks;
 
-namespace Bot_For_Shoes {
+namespace Bot_For_Shoes.bot.services {
 	public class DBConnectionService {
 
 		private SQLiteConnection _DBConnection;
@@ -162,6 +160,30 @@ namespace Bot_For_Shoes {
 			}
 
 			return res;
+		}
+
+		public int modifyCharXP (ulong user, string chara, int mod) {
+			int xp = -1;
+			string getXP = "SELECT xp FROM Chars WHERE id = @user AND char = @chara;";
+			string setXP = "UPDATE Chars SET xp = @newxp WHERE id = @user AND char = @chara;";
+
+			SQLiteCommand command = new SQLiteCommand(getXP, _DBConnection);
+			command.Parameters.Add(new SQLiteParameter("@user", user));
+			command.Parameters.Add(new SQLiteParameter("@chara", chara));
+
+			SQLiteDataReader result = command.ExecuteReader();
+			if (result.Read()) {
+				xp = result.GetInt32(0);
+				xp += mod;
+				xp = Math.Max(0, xp);
+
+				result.Close();
+				command.CommandText = setXP;
+				command.Parameters.Add(new SQLiteParameter("@newxp", xp));
+				command.ExecuteNonQuery();
+			}
+
+			return xp;
 		}
 
 		public List<Pair<string,int>> getSkillList (ulong user, string chara) {

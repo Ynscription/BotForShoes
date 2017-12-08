@@ -3,8 +3,10 @@ using Discord;
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Bot_For_Shoes.bot.services;
 
-namespace Bot_For_Shoes {
+namespace Bot_For_Shoes.bot.commands {
+
 	public class Roll : ModuleBase<SocketCommandContext> {
 
 		
@@ -31,12 +33,17 @@ namespace Bot_For_Shoes {
 				eb.WithColor(Color.Red);
 			}
 			else {
-				string name = _DBConnection.getActiveChar(Context.User.Id);
-				if (name == null)
-					name = Context.User.Username;
+				string active = _DBConnection.getActiveChar(Context.User.Id);
+				if (active == null) {
+					active = Context.User.Username;
+					eb.WithDescription(_roller.roll(param));
+				}
+				else {
+					int xp = _DBConnection.getCharXP(Context.User.Id, active);
+					eb.WithDescription(_roller.roll(param, xp));
+				}
 
-				eb.WithTitle(name + " uses Something (" + param + ")!");
-				eb.WithDescription(_roller.roll(param));
+				eb.WithTitle(active + " uses Something (" + param + ")!");				
 				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 			}	
 
@@ -55,7 +62,8 @@ namespace Bot_For_Shoes {
 				if (skills.Count > 0) {
 					Pair<string, int> skill = skills[0];
 					eb.WithTitle(active + " uses " + skill.First + " (" + skill.Second + ")!");
-					eb.WithDescription(_roller.roll(skill.Second));
+					int xp = _DBConnection.getCharXP(Context.User.Id, active);
+					eb.WithDescription(_roller.roll(skill.Second, xp));
 					eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 				} else {
 					eb.WithTitle("Warning!");
@@ -72,7 +80,41 @@ namespace Bot_For_Shoes {
 		}
 	}
 
+	
+	public class About : ModuleBase<SocketCommandContext> {
+		
 
+		public About() {
+			
+		}
+
+		[Command("system")]
+		[Summary("Displays information about the system.")]
+		[Alias("sys")]
+		public async Task SystemTextAsync() {
+			EmbedBuilder eb = new EmbedBuilder();
+
+			eb.WithTitle("**Roll for Shoes** System");
+			eb.WithDescription(TextWalls.getSystemText());
+			eb.WithColor(Color.DarkBlue);
+			
+			await ReplyAsync("", false, eb);
+		}
+
+		[Command("help")]
+		[Summary("Displays information about the bot.")]
+		[Alias("h")]
+		public async Task HelpTextAsync() {
+			EmbedBuilder eb = new EmbedBuilder();
+
+			eb.WithTitle("Bot for Shoes Help");
+			eb.WithDescription(TextWalls.getHelpText());
+			eb.WithColor(Color.DarkBlue);
+
+			await ReplyAsync("", false, eb);
+		}
+
+	}
 
 	[Group("character")]
 	[Alias("char")]
@@ -87,7 +129,7 @@ namespace Bot_For_Shoes {
 		
 
 		[Command]
-		[Priority (1)]
+		[Priority (0)]
 		[Summary("Switches the active char of a user.")]
 		[Alias("s", "sw", "select")]
 		public async Task SwitchCharDefAsync(string param) {
@@ -106,7 +148,7 @@ namespace Bot_For_Shoes {
 		}
 
 		[Command]
-		[Priority(0)]
+		[Priority(1)]
 		[Summary("Displays info of the active char.")]
 		public async Task CharInfoAsync() {
 			EmbedBuilder eb = new EmbedBuilder();
@@ -122,12 +164,7 @@ namespace Bot_For_Shoes {
 				}
 				int xp = _DBConnection.getCharXP (Context.User.Id, active);
 				eb.WithDescription("XP: " + xp);
-				EmbedFieldBuilder fb = new EmbedFieldBuilder();
-				fb.WithName(new String ("Skills".ToCharArray()));
-				fb.WithValue(new String(list.ToCharArray()));
-				fb.WithIsInline(true);
-				
-				eb.AddField(fb);
+				eb.AddField("Skills", list, true);
 				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 			} 
 			else {
@@ -234,7 +271,8 @@ namespace Bot_For_Shoes {
 				if (skills.Count > 0) {
 					Pair<string, int> skill = skills[0];
 					eb.WithTitle(active + " uses " + skill.First + " (" + skill.Second + ")!");
-					eb.WithDescription(_roller.roll(skill.Second));
+					int xp = _DBConnection.getCharXP(Context.User.Id, active);
+					eb.WithDescription(_roller.roll(skill.Second, xp));
 					eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 				} 
 				else {
@@ -314,6 +352,55 @@ namespace Bot_For_Shoes {
 	[Group("xp")]
 	public class XP: ModuleBase<SocketCommandContext> {
 
+		private DBConnectionService _DBConnection;
+		private Random _random;
+
+		public XP(DBConnectionService dbCon, Random random) {
+			_DBConnection = dbCon;
+			_random = random;
+		}
+
+		[Command]
+		[Priority(1)]
+		[Summary("Displays the XP of the current char.")]
+		[Alias("info")]
+		public async Task XPInfo() {
+			EmbedBuilder eb = new EmbedBuilder();
+			string active = _DBConnection.getActiveChar(Context.User.Id);
+			if (active != null) {
+				eb.WithTitle(active);
+				int xp = _DBConnection.getCharXP(Context.User.Id, active);
+				eb.WithDescription("XP: " + xp);
+				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
+			} else {
+				eb.WithTitle("Warning!");
+				eb.WithDescription("No active character or there has been a problem.");
+				eb.WithColor(Color.Red);
+			}
+
+			await ReplyAsync("", false, eb);
+		}
+
+		[Command]
+		[Priority(0)]
+		[Summary("modifies the XP of the current char.")]
+		[Alias("mod", "modify")]
+		public async Task XPInfo(int param) {
+			EmbedBuilder eb = new EmbedBuilder();
+			string active = _DBConnection.getActiveChar(Context.User.Id);
+			if (active != null) {
+				eb.WithTitle(active);
+				int xp = _DBConnection.modifyCharXP(Context.User.Id, active, param);
+				eb.WithDescription("XP: " + xp);
+				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
+			} else {
+				eb.WithTitle("Warning!");
+				eb.WithDescription("No active character or there has been a problem.");
+				eb.WithColor(Color.Red);
+			}
+
+			await ReplyAsync("", false, eb);
+		}
 	}
 
 }

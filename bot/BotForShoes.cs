@@ -3,9 +3,10 @@ using Discord.WebSocket;
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using System.Threading;
+using Bot_For_Shoes.bot.commands;
+using Bot_For_Shoes.bot.services;
 
-namespace Bot_For_Shoes {
+namespace Bot_For_Shoes.bot {
 	class BotForShoes {
 		private DiscordSocketClient _client;
 		private Commander _commander;
@@ -24,7 +25,7 @@ namespace Bot_For_Shoes {
 
 			_DBConnection = new DBConnectionService();
 			_map.AddSingleton(_DBConnection);
-			
+						
 			_commander = new Commander(_client);
 		}
 

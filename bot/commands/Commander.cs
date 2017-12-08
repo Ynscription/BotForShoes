@@ -4,7 +4,7 @@ using Discord.WebSocket;
 using System.Reflection;
 using System;
 
-namespace Bot_For_Shoes {
+namespace Bot_For_Shoes.bot.commands {
 	class Commander {
 
 		private CommandService _commands;
