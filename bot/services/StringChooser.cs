@@ -14,7 +14,7 @@ namespace Bot_For_Shoes.bot.services {
 			double bestV = 0;
 			
 			foreach (string s in list) {
-				double aux = _jw.Similarity(match, s);
+				double aux = _jw.Similarity(match.ToUpper(), s.ToUpper());
 				if (aux > bestV) {
 					bestV = aux;
 					bestS = s;
@@ -29,7 +29,7 @@ namespace Bot_For_Shoes.bot.services {
 			double bestV = 0;
 
 			foreach (Pair<string,int> s in list) {
-				double aux = _jw.Similarity(match, s.First);
+				double aux = _jw.Similarity(match.ToUpper(), s.First.ToUpper());
 				if (aux > bestV) {
 					bestV = aux;
 					bestS = s;

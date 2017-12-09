@@ -5,19 +5,18 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Bot_For_Shoes.bot.commands;
 using Bot_For_Shoes.bot.services;
-using Bot_For_Shoes.services;
 
 namespace Bot_For_Shoes.bot {
 	class BotForShoes {
 		private DiscordSocketClient _client;
 		private Commander _commander;
-		private ConfigLoader _cfgLoader;
+		private ConfigService _cfgService;
 		private readonly IServiceCollection _map = new ServiceCollection();
 		private DBConnectionService _DBConnection;
-		private readonly string _token = "Mzg4NDY3NTM1NjM0NDk3NTM2.DQtcGg.5EkBJPRZE0iBibkUM40qamJ5LLg";
 
 		public BotForShoes() {
-			_cfgLoader = new ConfigLoader();
+			_cfgService = new ConfigService();
+			_map.AddSingleton(_cfgService);
 
 			_client = new DiscordSocketClient();
 			_client.Log += Log;
@@ -27,7 +26,7 @@ namespace Bot_For_Shoes.bot {
 			_map.AddSingleton(random);
 			_map.AddSingleton(new Roller(random));			
 
-			_DBConnection = new DBConnectionService(_cfgLoader.DBPath);
+			_DBConnection = new DBConnectionService(_cfgService.DBPath);
 			_map.AddSingleton(_DBConnection);
 
 			_map.AddSingleton(new StringChooser());
@@ -39,7 +38,7 @@ namespace Bot_For_Shoes.bot {
 			IServiceProvider services = _map.BuildServiceProvider();
 			await _commander.InstallCommandsAsync(services);
 
-			await _client.LoginAsync(TokenType.Bot, _token);
+			await _client.LoginAsync(TokenType.Bot, _cfgService.Token);
 			await _client.StartAsync();
 
 			await Closure();

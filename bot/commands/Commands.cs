@@ -85,9 +85,10 @@ namespace Bot_For_Shoes.bot.commands {
 	
 	public class About : ModuleBase<SocketCommandContext> {
 		
+		private ConfigService _configService;
 
-		public About() {
-			
+		public About(ConfigService cfgService) {
+			_configService = cfgService;
 		}
 
 		[Command("system")]
@@ -97,7 +98,7 @@ namespace Bot_For_Shoes.bot.commands {
 			EmbedBuilder eb = new EmbedBuilder();
 
 			eb.WithTitle("**Roll for Shoes** System");
-			eb.WithDescription(TextWalls.getSystemText());
+			eb.WithDescription(TextWallsService.getSystemText(_configService.TextWallPath));
 			eb.WithColor(Color.DarkBlue);
 			
 			await ReplyAsync("", false, eb);
@@ -110,7 +111,7 @@ namespace Bot_For_Shoes.bot.commands {
 			EmbedBuilder eb = new EmbedBuilder();
 
 			eb.WithTitle("Bot for Shoes Help");
-			eb.WithDescription(TextWalls.getHelpText());
+			eb.WithDescription(TextWallsService.getHelpText(_configService.TextWallPath));
 			eb.WithColor(Color.DarkBlue);
 
 			await ReplyAsync("", false, eb);
