@@ -5,16 +5,20 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Bot_For_Shoes.bot.commands;
 using Bot_For_Shoes.bot.services;
+using Bot_For_Shoes.services;
 
 namespace Bot_For_Shoes.bot {
 	class BotForShoes {
 		private DiscordSocketClient _client;
 		private Commander _commander;
+		private ConfigLoader _cfgLoader;
 		private readonly IServiceCollection _map = new ServiceCollection();
 		private DBConnectionService _DBConnection;
 		private readonly string _token = "Mzg4NDY3NTM1NjM0NDk3NTM2.DQtcGg.5EkBJPRZE0iBibkUM40qamJ5LLg";
 
 		public BotForShoes() {
+			_cfgLoader = new ConfigLoader();
+
 			_client = new DiscordSocketClient();
 			_client.Log += Log;
 			_map.AddSingleton(_client);
@@ -23,8 +27,10 @@ namespace Bot_For_Shoes.bot {
 			_map.AddSingleton(random);
 			_map.AddSingleton(new Roller(random));			
 
-			_DBConnection = new DBConnectionService();
+			_DBConnection = new DBConnectionService(_cfgLoader.DBPath);
 			_map.AddSingleton(_DBConnection);
+
+			_map.AddSingleton(new StringChooser());
 						
 			_commander = new Commander(_client);
 		}

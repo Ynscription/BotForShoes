@@ -7,8 +7,8 @@ namespace Bot_For_Shoes.bot.services {
 
 		private SQLiteConnection _DBConnection;
 		
-		public DBConnectionService () {
-			_DBConnection = new SQLiteConnection("Data Source=e:\\BotForShoesDB\\users.sqlite; Version=3; New = True;");
+		public DBConnectionService(string DBPath) {
+			_DBConnection = new SQLiteConnection("Data Source=" + DBPath + "; Version=3; New = True;");
 			_DBConnection.Open();
 			new SQLiteCommand("CREATE TABLE if not exists Users (id INTEGER PRIMARY KEY, active TEXT);", _DBConnection).ExecuteNonQuery();
 			new SQLiteCommand("CREATE TABLE if not exists Chars (id INTEGER, char TEXT, xp INTEGER, PRIMARY KEY (id, char));", _DBConnection).ExecuteNonQuery();

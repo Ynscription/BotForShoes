@@ -13,11 +13,13 @@ namespace Bot_For_Shoes.bot.commands {
 		private DBConnectionService _DBConnection;
 		private Roller _roller;
 		private Random _random;
+		private StringChooser _stringChooser;
 
-		public Roll (DBConnectionService dbCon, Roller roller, Random random) {
+		public Roll (DBConnectionService dbCon, Roller roller, Random random, StringChooser stringChooser) {
 			_DBConnection = dbCon;
 			_roller = roller;
 			_random = random;
+			_stringChooser = stringChooser;
 		}
 		
 		[Command("roll")]
@@ -60,7 +62,7 @@ namespace Bot_For_Shoes.bot.commands {
 			if (active != null) {
 				List<Pair<string, int>> skills = _DBConnection.getSkillsLike(Context.User.Id, active, param);
 				if (skills.Count > 0) {
-					Pair<string, int> skill = skills[0];
+					Pair<string, int> skill = _stringChooser.getClosestString(skills, param);
 					eb.WithTitle(active + " uses " + skill.First + " (" + skill.Second + ")!");
 					int xp = _DBConnection.getCharXP(Context.User.Id, active);
 					eb.WithDescription(_roller.roll(skill.Second, xp));
@@ -121,10 +123,12 @@ namespace Bot_For_Shoes.bot.commands {
 	public class Character : ModuleBase<SocketCommandContext> {
 		private DBConnectionService _DBConnection;
 		private Random _random;
+		private StringChooser _stringChooser;
 
-		public Character(DBConnectionService dbCon, Random random) {
+		public Character(DBConnectionService dbCon, Random random, StringChooser stringChooser) {
 			_DBConnection = dbCon;
 			_random = random;
+			_stringChooser = stringChooser;
 		}
 		
 
@@ -137,7 +141,7 @@ namespace Bot_For_Shoes.bot.commands {
 
 			List<string> chars = _DBConnection.getCharsLike(Context.User.Id, param);
 			if (chars.Count > 0) {
-				_DBConnection.setActiveChar(Context.User.Id, chars[0]);
+				_DBConnection.setActiveChar(Context.User.Id, _stringChooser.getClosestString(chars, param));
 				eb.WithTitle("Switched character to " + chars[0] + ".");
 				eb.WithDescription(Context.User.Mention);
 				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
@@ -256,11 +260,13 @@ namespace Bot_For_Shoes.bot.commands {
 		private DBConnectionService _DBConnection;
 		private Roller _roller;
 		private Random _random;
+		private StringChooser _stringChooser;
 
-		public Skill(DBConnectionService dbCon, Roller roller, Random random) {
+		public Skill(DBConnectionService dbCon, Roller roller, Random random, StringChooser stringChooser) {
 			_DBConnection = dbCon;
 			_roller = roller;
 			_random = random;
+			_stringChooser = stringChooser;
 		}
 
 		[Command]
@@ -272,7 +278,7 @@ namespace Bot_For_Shoes.bot.commands {
 			if (active != null) {
 				List<Pair<string, int>> skills = _DBConnection.getSkillsLike(Context.User.Id, active,param);
 				if (skills.Count > 0) {
-					Pair<string, int> skill = skills[0];
+					Pair<string, int> skill = _stringChooser.getClosestString(skills, param);
 					eb.WithTitle(active + " uses " + skill.First + " (" + skill.Second + ")!");
 					int xp = _DBConnection.getCharXP(Context.User.Id, active);
 					eb.WithDescription(_roller.roll(skill.Second, xp));
