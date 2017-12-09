@@ -27,7 +27,7 @@ namespace Bot_For_Shoes.bot.commands {
 			if (msg != null) {
 				if (!msg.Author.IsBot) {
 					int argPos = 0;
-					if (msg.HasCharPrefix('!', ref argPos)) {
+					if (msg.HasCharPrefix(';', ref argPos)) {
 						SocketCommandContext context = new SocketCommandContext(_client, msg);
 						var res = await _commands.ExecuteAsync(context, argPos, _services);
 						if (!res.IsSuccess)
