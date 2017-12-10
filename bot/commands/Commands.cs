@@ -369,7 +369,7 @@ namespace Bot_For_Shoes.bot.commands {
 		public async Task AddSkillAsync(string skill, int lvl) {
 			EmbedBuilder eb = new EmbedBuilder();
 			string active = _DBConnection.getActiveChar(Context.User.Id);
-			if (lvl > 1 || lvl <= 50) {
+			if (lvl > 1 && lvl <= 50) {
 				if (active != null) {
 					if (_DBConnection.addSkill(Context.User.Id, active, skill, lvl)) {
 						eb.WithTitle(active + " can now use " + skill + " " + lvl);
