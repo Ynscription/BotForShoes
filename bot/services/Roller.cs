@@ -34,14 +34,12 @@ namespace Bot_For_Shoes.bot.services {
 
 				if (i < param - 1)
 					res += ", ";
-				else if (crits == param)
-					res += "\t**LVL UP!**";
 			}
 			res += "\n**Total**: " + total;
 			return res;
 		}
 
-		public string roll(int param, int xp) {
+		public string roll(int param, int xp, int step) {
 			string res = "";
 			res = "Result " + param + "d6: ";
 			int total = 0;
@@ -61,7 +59,7 @@ namespace Bot_For_Shoes.bot.services {
 				else if (crits == param)
 					res += "\t**LVL UP!**";
 				else if (param - crits <= xp) {
-					res += "\t(Spend " + (param - crits) + " XP to lvl up)";
+					res += "\t(Spend " + (param - crits)*step + " XP to lvl up)";
 				}
 			}
 			res += "\n**Total**: " + total;

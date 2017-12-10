@@ -42,7 +42,8 @@ namespace Bot_For_Shoes.bot.commands {
 				}
 				else {
 					int xp = _DBConnection.getCharXP(Context.User.Id, active);
-					eb.WithDescription(_roller.roll(param, xp));
+					int step = _DBConnection.getCharXPStep (Context.User.Id, active);
+					eb.WithDescription(_roller.roll(param, xp, step));
 				}
 
 				eb.WithTitle(active + " uses Something (" + param + ")!");				
@@ -65,7 +66,8 @@ namespace Bot_For_Shoes.bot.commands {
 					Pair<string, int> skill = _stringChooser.getClosestString(skills, param);
 					eb.WithTitle(active + " uses " + skill.First + " (" + skill.Second + ")!");
 					int xp = _DBConnection.getCharXP(Context.User.Id, active);
-					eb.WithDescription(_roller.roll(skill.Second, xp));
+					int step = _DBConnection.getCharXPStep(Context.User.Id, active);
+					eb.WithDescription(_roller.roll(skill.Second, xp, step));
 					eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 				} else {
 					eb.WithTitle("Warning!");
@@ -86,9 +88,18 @@ namespace Bot_For_Shoes.bot.commands {
 	public class About : ModuleBase<SocketCommandContext> {
 		
 		private ConfigService _configService;
+		private StringChooser _stringChooser;
+		private List<Pair<string, int>> commands;
 
-		public About(ConfigService cfgService) {
+		public About(ConfigService cfgService, StringChooser stringChooser) {
 			_configService = cfgService;
+			_stringChooser = stringChooser;
+			commands = new List<Pair<string, int>>();
+			commands.Add(new Pair<string, int>("Help", 1));
+			commands.Add(new Pair<string, int>("Roll", 2));
+			commands.Add(new Pair<string, int>("Char", 3));
+			commands.Add(new Pair<string, int>("Skill", 4));
+			commands.Add(new Pair<string, int>("XP", 5));
 		}
 
 		[Command("system")]
@@ -105,14 +116,37 @@ namespace Bot_For_Shoes.bot.commands {
 		}
 
 		[Command("help")]
+		[Priority(1)]
 		[Summary("Displays information about the bot.")]
 		[Alias("h")]
 		public async Task HelpTextAsync() {
 			EmbedBuilder eb = new EmbedBuilder();
 
 			eb.WithTitle("Bot for Shoes Help");
-			eb.WithDescription(TextWallsService.getHelpText(_configService.TextWallPath));
+			eb.WithDescription(TextWallsService.getHelpText(_configService.TextWallPath, 0));
 			eb.WithColor(Color.DarkBlue);
+
+			await ReplyAsync("", false, eb);
+		}
+
+		[Command("help")]
+		[Priority(0)]
+		[Summary("Displays information about the bot.")]
+		[Alias("h")]
+		public async Task HelpTextAsync(string param) {
+			EmbedBuilder eb = new EmbedBuilder();
+
+			Pair<string, int> command = _stringChooser.getClosestString(commands, param);
+			if (command != null) {
+				eb.WithTitle(command.First + " Help");
+				eb.WithDescription(TextWallsService.getHelpText(_configService.TextWallPath, command.Second));
+				eb.WithColor(Color.DarkBlue);
+			}
+			else {
+				eb.WithTitle("Bot for Shoes Help");
+				eb.WithDescription(TextWallsService.getHelpText(_configService.TextWallPath, -1));
+				eb.WithColor(Color.Red);
+			}
 
 			await ReplyAsync("", false, eb);
 		}
@@ -136,7 +170,7 @@ namespace Bot_For_Shoes.bot.commands {
 		[Command]
 		[Priority (0)]
 		[Summary("Switches the active char of a user.")]
-		[Alias("s", "sw", "select")]
+		[Alias("swi")]
 		public async Task SwitchCharDefAsync(string param) {
 			EmbedBuilder eb = new EmbedBuilder();
 
@@ -188,7 +222,7 @@ namespace Bot_For_Shoes.bot.commands {
 		[Command("create")]
 		[Priority(2)]
 		[Summary("Creates a new character with the specified name.")]
-		[Alias("c", "new")]
+		[Alias("new")]
 		public async Task CreateCharAsync(string param) {
 			EmbedBuilder eb = new EmbedBuilder();
 
@@ -210,7 +244,7 @@ namespace Bot_For_Shoes.bot.commands {
 		[Command("delete")]
 		[Priority(2)]
 		[Summary("Deletes an existing character with the specified name.")]
-		[Alias("d", "del")]
+		[Alias("del")]
 		public async Task DeleteCharAsync(string param) {
 			EmbedBuilder eb = new EmbedBuilder();
 
@@ -231,7 +265,7 @@ namespace Bot_For_Shoes.bot.commands {
 		[Command("list")]
 		[Priority(2)]
 		[Summary("Lists all characters of a user.")]
-		[Alias("l", "ls")]
+		[Alias("ls")]
 		public async Task ListCharsAsync() {
 			EmbedBuilder eb = new EmbedBuilder();
 			List<string> chars = _DBConnection.getCharList(Context.User.Id);
@@ -271,8 +305,36 @@ namespace Bot_For_Shoes.bot.commands {
 		}
 
 		[Command]
+		[Priority(1)]
+		[Summary("Displays the active's char skill list.")]
+		[Alias("ls", "list")]
+		public async Task RollSkillAsync() {
+			EmbedBuilder eb = new EmbedBuilder();
+			string active = _DBConnection.getActiveChar(Context.User.Id);
+			if (active != null) {
+				eb.WithTitle(active + " Skills");
+				List<Pair<string, int>> skills = _DBConnection.getSkillList(Context.User.Id, active);
+				string list = "";
+				if (skills.Count < 1)
+					list = "No skills";
+				foreach (Pair<string, int> skill in skills) {
+					list += skill.First + " " + skill.Second + Environment.NewLine;
+				}
+				eb.WithDescription(list);
+				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
+			} else {
+				eb.WithTitle("Warning!");
+				eb.WithDescription("No active character or there has been a problem.");
+				eb.WithColor(Color.Red);
+			}
+
+			await ReplyAsync("", false, eb);
+		}
+
+		[Command]
+		[Priority(0)]
 		[Summary("Rolls using the skill.")]
-		[Alias("use", "u", "roll", "r")]
+		[Alias("use", "roll")]
 		public async Task RollSkillAsync(string param) {
 			EmbedBuilder eb = new EmbedBuilder();
 			string active = _DBConnection.getActiveChar(Context.User.Id);
@@ -282,7 +344,8 @@ namespace Bot_For_Shoes.bot.commands {
 					Pair<string, int> skill = _stringChooser.getClosestString(skills, param);
 					eb.WithTitle(active + " uses " + skill.First + " (" + skill.Second + ")!");
 					int xp = _DBConnection.getCharXP(Context.User.Id, active);
-					eb.WithDescription(_roller.roll(skill.Second, xp));
+					int step = _DBConnection.getCharXPStep(Context.User.Id, active);
+					eb.WithDescription(_roller.roll(skill.Second, xp, step));
 					eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
 				} 
 				else {
@@ -302,7 +365,7 @@ namespace Bot_For_Shoes.bot.commands {
 
 		[Command("add")]
 		[Summary("Adds a new skill to the active character.")]
-		[Alias("a")]
+		[Alias("new", "create")]
 		public async Task AddSkillAsync(string skill, int lvl) {
 			EmbedBuilder eb = new EmbedBuilder();
 			string active = _DBConnection.getActiveChar(Context.User.Id);
@@ -335,7 +398,7 @@ namespace Bot_For_Shoes.bot.commands {
 
 		[Command("remove")]
 		[Summary("Removes a skill from the active character.")]
-		[Alias("r", "rm", "del", "delete")]
+		[Alias("del", "delete")]
 		public async Task RemoveSkillAsync(string skill) {
 			EmbedBuilder eb = new EmbedBuilder();
 			string active = _DBConnection.getActiveChar(Context.User.Id);
@@ -393,9 +456,9 @@ namespace Bot_For_Shoes.bot.commands {
 
 		[Command]
 		[Priority(0)]
-		[Summary("modifies the XP of the current char.")]
+		[Summary("Modifies the XP of the current char.")]
 		[Alias("mod", "modify")]
-		public async Task XPInfo(int param) {
+		public async Task XPMod(int param) {
 			EmbedBuilder eb = new EmbedBuilder();
 			string active = _DBConnection.getActiveChar(Context.User.Id);
 			if (active != null) {
@@ -411,6 +474,47 @@ namespace Bot_For_Shoes.bot.commands {
 
 			await ReplyAsync("", false, eb);
 		}
+
+		[Command("step")]
+		[Priority(1)]
+		[Summary("Displays the XPStep of the current char.")]
+		public async Task XPStepInfo() {
+			EmbedBuilder eb = new EmbedBuilder();
+			string active = _DBConnection.getActiveChar(Context.User.Id);
+			if (active != null) {
+				eb.WithTitle(active);
+				int step = _DBConnection.getCharXPStep(Context.User.Id, active);
+				eb.WithDescription("XP step: " + step);
+				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
+			} else {
+				eb.WithTitle("Warning!");
+				eb.WithDescription("No active character or there has been a problem.");
+				eb.WithColor(Color.Red);
+			}
+
+			await ReplyAsync("", false, eb);
+		}
+
+		[Command("step")]
+		[Priority(0)]
+		[Summary("Sets the XP step of the current char.")]
+		public async Task XPStepMod(int param) {
+			EmbedBuilder eb = new EmbedBuilder();
+			string active = _DBConnection.getActiveChar(Context.User.Id);
+			if (active != null) {
+				eb.WithTitle(active);
+				int step = _DBConnection.setCharXPStep(Context.User.Id, active, param);
+				eb.WithDescription("XP step: " + step);
+				eb.WithColor((byte)_random.Next(0, 256), (byte)_random.Next(0, 256), (byte)_random.Next(0, 256));
+			} else {
+				eb.WithTitle("Warning!");
+				eb.WithDescription("No active character or there has been a problem.");
+				eb.WithColor(Color.Red);
+			}
+
+			await ReplyAsync("", false, eb);
+		}
+
 	}
 
 }

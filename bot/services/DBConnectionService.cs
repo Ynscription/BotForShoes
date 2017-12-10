@@ -11,7 +11,7 @@ namespace Bot_For_Shoes.bot.services {
 			_DBConnection = new SQLiteConnection("Data Source=" + DBPath + "; Version=3; New = True;");
 			_DBConnection.Open();
 			new SQLiteCommand("CREATE TABLE if not exists Users (id INTEGER PRIMARY KEY, active TEXT);", _DBConnection).ExecuteNonQuery();
-			new SQLiteCommand("CREATE TABLE if not exists Chars (id INTEGER, char TEXT, xp INTEGER, PRIMARY KEY (id, char));", _DBConnection).ExecuteNonQuery();
+			new SQLiteCommand("CREATE TABLE if not exists Chars (id INTEGER, char TEXT, xp INTEGER, step INTEGER, PRIMARY KEY (id, char));", _DBConnection).ExecuteNonQuery();
 			new SQLiteCommand("CREATE TABLE if not exists Skills (id INTEGER, char TEXT, skill TEXT, lvl INTEGER, PRIMARY KEY (id, char, skill));", _DBConnection).ExecuteNonQuery();
 		}
 
@@ -30,7 +30,7 @@ namespace Bot_For_Shoes.bot.services {
 		public bool createChar (ulong user, string chara) {
 			bool success = false;
 			string checkChar = "SELECT * FROM Chars WHERE id = @user AND char = @chara;";
-			string insertChar = "INSERT INTO Chars (id, char, xp) VALUES (@user, @chara, 0);";
+			string insertChar = "INSERT INTO Chars (id, char, xp, step) VALUES (@user, @chara, 0, 1);";
 			string insertActive = "INSERT OR REPLACE INTO Users (id, active) VALUES (@user, @chara);";
 
 			SQLiteCommand command = new SQLiteCommand(_DBConnection);
@@ -184,6 +184,42 @@ namespace Bot_For_Shoes.bot.services {
 			}
 
 			return xp;
+		}
+
+		public int getCharXPStep (ulong user, string chara) {
+			int res = -1;
+			string getStep = "SELECT step FROM Chars WHERE id = @user AND char = @chara";
+			SQLiteCommand command = new SQLiteCommand(getStep, _DBConnection);
+			command.Parameters.Add(new SQLiteParameter("@user", user));
+			command.Parameters.Add(new SQLiteParameter("@chara", chara));
+
+			SQLiteDataReader result = command.ExecuteReader();
+			if (result.Read()) {
+				res = result.GetInt32(0);
+			}
+
+			return res;
+		}
+
+		public int setCharXPStep (ulong user, string chara, int mod) {
+			int step = -1;
+			string getStep = "SELECT step FROM Chars WHERE id = @user AND char = @chara;";
+			string setStep = "UPDATE Chars SET step = @newstep WHERE id = @user AND char = @chara;";
+
+			SQLiteCommand command = new SQLiteCommand(getStep, _DBConnection);
+			command.Parameters.Add(new SQLiteParameter("@user", user));
+			command.Parameters.Add(new SQLiteParameter("@chara", chara));
+
+			SQLiteDataReader result = command.ExecuteReader();
+			if (result.Read()) {
+				step = Math.Max(1, mod);
+				result.Close();
+				command.CommandText = setStep;
+				command.Parameters.Add(new SQLiteParameter("@newstep", step));
+				command.ExecuteNonQuery();
+			}
+
+			return step;
 		}
 
 		public List<Pair<string,int>> getSkillList (ulong user, string chara) {
