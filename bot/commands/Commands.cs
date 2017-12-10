@@ -29,7 +29,7 @@ namespace Bot_For_Shoes.bot.commands {
 		public async Task RollAsync (int param = 1) {
 			EmbedBuilder eb = new EmbedBuilder();
 			
-			if (param > 20 || param < 1) {
+			if (param > 50 || param < 1) {
 				eb.WithTitle("Warning!");
 				eb.WithDescription("Invalid amount of dice.");
 				eb.WithColor(Color.Red);
@@ -369,7 +369,7 @@ namespace Bot_For_Shoes.bot.commands {
 		public async Task AddSkillAsync(string skill, int lvl) {
 			EmbedBuilder eb = new EmbedBuilder();
 			string active = _DBConnection.getActiveChar(Context.User.Id);
-			if (lvl > 1) {
+			if (lvl > 1 || lvl <= 50) {
 				if (active != null) {
 					if (_DBConnection.addSkill(Context.User.Id, active, skill, lvl)) {
 						eb.WithTitle(active + " can now use " + skill + " " + lvl);
@@ -390,7 +390,7 @@ namespace Bot_For_Shoes.bot.commands {
 			}
 			else {
 				eb.WithTitle("Warning!");
-				eb.WithDescription("Level must be higher than 1.");
+				eb.WithDescription("Level must be higher than 1 and lower than 50.");
 				eb.WithColor(Color.Red);
 			}
 			await ReplyAsync("", false, eb);
